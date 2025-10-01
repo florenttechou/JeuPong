@@ -37,7 +37,7 @@ h1 {
 canvas {
   display: block;
   width: 100%;
-  border: 3px solid #00ffa6;
+  border: 3px solid #ffffff;
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.8));
 }

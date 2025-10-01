@@ -34,6 +34,7 @@ const BALL_INITIAL_SPEED_X = 3;
 const BALL_INITIAL_SPEED_VARIATION = 1.5;
 const BALL_INITIAL_SPEED_Y = 2;
 const PADDLE_SPEED_INCREASE = 1.05;
+const PADDLE_EDGE_DAMPING = 0.65;
 
 const ball = {
   x: canvas.width / 2,
@@ -137,16 +138,28 @@ function moveBall(delta) {
     const speedX = Math.abs(ball.velocityX) * PADDLE_SPEED_INCREASE;
     ball.velocityX = speedX;
     const collidePoint = ball.y - (player.y + player.height / 2);
-    ball.velocityY = collidePoint * 0.2;
-    ball.velocityY *= PADDLE_SPEED_INCREASE;
+    const normalized = Math.max(
+      -1,
+      Math.min(1, collidePoint / (player.height / 2))
+    );
+    const edgeDamping =
+      1 - Math.min(Math.abs(normalized), 1) * (1 - PADDLE_EDGE_DAMPING);
+    ball.velocityY =
+      normalized * Math.abs(ball.velocityX) * edgeDamping * PADDLE_SPEED_INCREASE;
   }
 
   if (collidedWithComputer) {
     const speedX = Math.abs(ball.velocityX) * PADDLE_SPEED_INCREASE;
     ball.velocityX = -speedX;
     const collidePoint = ball.y - (computer.y + computer.height / 2);
-    ball.velocityY = collidePoint * 0.2;
-    ball.velocityY *= PADDLE_SPEED_INCREASE;
+    const normalized = Math.max(
+      -1,
+      Math.min(1, collidePoint / (computer.height / 2))
+    );
+    const edgeDamping =
+      1 - Math.min(Math.abs(normalized), 1) * (1 - PADDLE_EDGE_DAMPING);
+    ball.velocityY =
+      normalized * Math.abs(ball.velocityX) * edgeDamping * PADDLE_SPEED_INCREASE;
   }
 
   if (ball.x - ball.size < 0) {

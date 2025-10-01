@@ -7,7 +7,7 @@ const computerScoreElement = document.getElementById("computer-score");
 
 const TABLE_COLOR = "rgba(0, 0, 0, 0.6)";
 const NET_COLOR = "rgba(255, 255, 255, 0.4)";
-const PADDLE_COLOR = "#00ffa6";
+const PADDLE_COLOR = "#ffffff";
 const BALL_COLOR = "#ffffff";
 
 const MAX_SCORE = 10;

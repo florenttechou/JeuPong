@@ -84,9 +84,7 @@ function drawPaddle({ x, y, width, height }) {
 
 function drawBall() {
   ctx.fillStyle = BALL_COLOR;
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillRect(ball.x - ball.size, ball.y - ball.size, ball.size * 2, ball.size * 2);
 }
 
 function movePlayer(delta) {

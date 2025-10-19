@@ -49,6 +49,22 @@ canvas {
   font-size: 1.1rem;
 }
 
+.winner-banner {
+  display: none;
+  margin: 1.5rem 0 0;
+  text-align: center;
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00ffa6;
+  text-shadow: 0 0 10px rgba(0, 255, 166, 0.6);
+}
+
+.winner-banner.is-visible {
+  display: block;
+}
+
 .controls {
   display: flex;
   gap: 1rem;

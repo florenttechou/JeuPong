@@ -15,6 +15,12 @@
           <span>Joueur: <strong id="player-score">0</strong></span>
           <span>Ordinateur: <strong id="computer-score">0</strong></span>
         </div>
+        <p
+          id="winner-banner"
+          class="winner-banner"
+          role="alert"
+          aria-live="assertive"
+        ></p>
         <div class="controls">
           <button id="start" type="button">Nouvelle partie</button>
           <button id="pause" type="button">Pause</button>
@@ -25,7 +31,10 @@
         <ul>
           <li>Déplacez la raquette de gauche avec la souris ou les flèches haut/bas.</li>
           <li>Marquez des points en renvoyant la balle derrière la raquette adverse.</li>
-          <li>Le premier joueur à atteindre 10 points gagne la partie.</li>
+          <li>
+            La manche se joue en 3 points avec deux points d'écart requis pour
+            gagner.
+          </li>
         </ul>
       </aside>
     </main>

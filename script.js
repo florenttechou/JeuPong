@@ -4,13 +4,15 @@ const startButton = document.getElementById("start");
 const pauseButton = document.getElementById("pause");
 const playerScoreElement = document.getElementById("player-score");
 const computerScoreElement = document.getElementById("computer-score");
+const winnerBanner = document.getElementById("winner-banner");
 
 const TABLE_COLOR = "rgba(0, 0, 0, 0.6)";
 const NET_COLOR = "rgba(255, 255, 255, 0.4)";
 const PADDLE_COLOR = "#ffffff";
 const BALL_COLOR = "#ffffff";
 
-const MAX_SCORE = 10;
+const WINNING_SCORE = 3;
+const WINNING_LEAD = 2;
 const FRAME_TIME = 1000 / 60;
 
 const player = {
@@ -284,6 +286,7 @@ function resetGame() {
   particles = [];
   isBallRespawning = false;
   ball.visible = true;
+  hideWinnerBanner();
 }
 
 function resetPaddlesPosition() {
@@ -293,12 +296,12 @@ function resetPaddlesPosition() {
   player.dy = 0;
 }
 
+function isMatchPoint(score, opponentScore) {
+  return score >= WINNING_SCORE - 1 && score - opponentScore === 1;
+}
+
 function resetPaddlesIfMatchPoint() {
-  if (
-    playerScore < MAX_SCORE &&
-    computerScore < MAX_SCORE &&
-    (playerScore === MAX_SCORE - 1 || computerScore === MAX_SCORE - 1)
-  ) {
+  if (isMatchPoint(playerScore, computerScore) || isMatchPoint(computerScore, playerScore)) {
     resetPaddlesPosition();
   }
 }
@@ -306,6 +309,16 @@ function resetPaddlesIfMatchPoint() {
 function updateScores() {
   playerScoreElement.textContent = playerScore;
   computerScoreElement.textContent = computerScore;
+}
+
+function hideWinnerBanner() {
+  winnerBanner.textContent = "";
+  winnerBanner.classList.remove("is-visible");
+}
+
+function showWinnerBanner(winner) {
+  winnerBanner.textContent = `${winner} gagne !`;
+  winnerBanner.classList.add("is-visible");
 }
 
 function drawTable() {
@@ -398,10 +411,13 @@ function moveBall(delta) {
 }
 
 function checkWinner() {
-  if (playerScore >= MAX_SCORE || computerScore >= MAX_SCORE) {
+  const lead = Math.abs(playerScore - computerScore);
+  const bestScore = Math.max(playerScore, computerScore);
+
+  if (bestScore >= WINNING_SCORE && lead >= WINNING_LEAD) {
     stopGame();
     const winner = playerScore > computerScore ? "Joueur" : "Ordinateur";
-    alert(`${winner} gagne !`);
+    showWinnerBanner(winner);
     return true;
   }
   return false;
@@ -447,6 +463,7 @@ startButton.addEventListener("click", () => {
   initializeAudioContext();
   resetGame();
   startGame();
+  pauseButton.textContent = "Pause";
 });
 
 pauseButton.addEventListener("click", () => {

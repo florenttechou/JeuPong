@@ -37,7 +37,8 @@ const PADDLE_SPEED_INCREASE = 1.05;
 const PADDLE_HIT_SPEED_BOOST = 1.08;
 const PADDLE_EDGE_DAMPING = 0.65;
 const MAX_BALL_SPEED = 9;
-const BALL_RESPAWN_DELAY = 350;
+const RESPAWN_INITIAL_DELAY = 3000;
+const COUNTDOWN_START_VALUE = 3;
 
 function clampBallSpeed() {
   const speed = Math.hypot(ball.velocityX, ball.velocityY);
@@ -83,6 +84,8 @@ let particles = [];
 let isBallRespawning = false;
 let respawnTimeoutId = null;
 let audioContext = null;
+let countdownValue = null;
+let countdownIntervalId = null;
 
 function initializeAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -119,6 +122,29 @@ function playRetroExplosion() {
 
   oscillator.start(now);
   oscillator.stop(now + 0.32);
+}
+
+function playRetroBeep() {
+  const context = audioContext;
+  if (!context) {
+    return;
+  }
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.setValueAtTime(660, now);
+  oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+
+  gainNode.gain.setValueAtTime(0.25, now);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+
+  oscillator.start(now);
+  oscillator.stop(now + 0.22);
 }
 
 function spawnDisintegrationParticles(x, y) {
@@ -164,25 +190,72 @@ function drawParticles() {
   });
 }
 
+function drawCountdown() {
+  if (countdownValue === null) {
+    return;
+  }
+  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 72px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(countdownValue, canvas.width / 2, canvas.height / 2);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}
+
+function clearCountdownTimers() {
+  if (respawnTimeoutId) {
+    clearTimeout(respawnTimeoutId);
+    respawnTimeoutId = null;
+  }
+  if (countdownIntervalId) {
+    clearInterval(countdownIntervalId);
+    countdownIntervalId = null;
+  }
+  countdownValue = null;
+}
+
+function startCountdown(direction) {
+  countdownValue = COUNTDOWN_START_VALUE;
+  playRetroBeep();
+  countdownIntervalId = setInterval(() => {
+    countdownValue -= 1;
+    if (countdownValue > 0) {
+      playRetroBeep();
+      return;
+    }
+
+    clearInterval(countdownIntervalId);
+    countdownIntervalId = null;
+    countdownValue = null;
+    resetPaddlesPosition();
+    resetBall(direction);
+    ball.visible = true;
+    isBallRespawning = false;
+  }, 1000);
+}
+
 function triggerBallDisintegration(direction) {
   initializeAudioContext();
   spawnDisintegrationParticles(ball.x, ball.y);
   playRetroExplosion();
   ball.visible = false;
   isBallRespawning = true;
-  if (respawnTimeoutId) {
-    clearTimeout(respawnTimeoutId);
-  }
-  respawnTimeoutId = setTimeout(() => {
-    const hasWinner = checkWinner();
-    if (!hasWinner) {
-      resetPaddlesIfMatchPoint();
-      resetBall(direction);
-      ball.visible = true;
-    }
+  clearCountdownTimers();
+
+  const hasWinner = checkWinner();
+  if (hasWinner) {
     isBallRespawning = false;
+    return;
+  }
+
+  respawnTimeoutId = setTimeout(() => {
     respawnTimeoutId = null;
-  }, BALL_RESPAWN_DELAY);
+    resetPaddlesIfMatchPoint();
+    startCountdown(direction);
+  }, RESPAWN_INITIAL_DELAY);
 }
 
 function resetBall(direction = 1) {
@@ -197,10 +270,7 @@ function resetBall(direction = 1) {
 }
 
 function resetGame() {
-  if (respawnTimeoutId) {
-    clearTimeout(respawnTimeoutId);
-    respawnTimeoutId = null;
-  }
+  clearCountdownTimers();
   playerScore = 0;
   computerScore = 0;
   updateScores();
@@ -215,6 +285,7 @@ function resetPaddlesPosition() {
   const baseY = canvas.height / 2 - player.height / 2;
   player.y = baseY;
   computer.y = baseY;
+  player.dy = 0;
 }
 
 function resetPaddlesIfMatchPoint() {
@@ -347,6 +418,7 @@ function update(timestamp) {
   drawPaddle(computer);
   drawBall();
   drawParticles();
+  drawCountdown();
 
   animationFrameId = requestAnimationFrame(update);
 }

@@ -194,8 +194,11 @@ function drawCountdown() {
   if (countdownValue === null) {
     return;
   }
-  ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 72px 'Courier New', monospace";
   ctx.textAlign = "center";

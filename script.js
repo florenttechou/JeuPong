@@ -11,7 +11,7 @@ const NET_COLOR = "rgba(255, 255, 255, 0.4)";
 const PADDLE_COLOR = "#ffffff";
 const BALL_COLOR = "#ffffff";
 
-const WINNING_SCORE = 3;
+const WINNING_SCORE = 5;
 const WINNING_LEAD = 2;
 const FRAME_TIME = 1000 / 60;
 

@@ -195,17 +195,19 @@ function drawCountdown() {
     return;
   }
   ctx.save();
-  ctx.globalAlpha = 0.4;
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 110, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
+
+  ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 72px 'Courier New', monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(countdownValue, canvas.width / 2, canvas.height / 2);
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
+  ctx.restore();
 }
 
 function clearCountdownTimers() {

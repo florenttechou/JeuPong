@@ -36,6 +36,16 @@ const BALL_INITIAL_SPEED_Y = 2;
 const PADDLE_SPEED_INCREASE = 1.05;
 const PADDLE_HIT_SPEED_BOOST = 1.08;
 const PADDLE_EDGE_DAMPING = 0.65;
+const MAX_BALL_SPEED = 9;
+
+function clampBallSpeed() {
+  const speed = Math.hypot(ball.velocityX, ball.velocityY);
+  if (speed > MAX_BALL_SPEED) {
+    const scale = MAX_BALL_SPEED / speed;
+    ball.velocityX *= scale;
+    ball.velocityY *= scale;
+  }
+}
 
 function adjustBallAfterPaddleCollision(paddle, direction) {
   const baseSpeed = Math.abs(ball.velocityX) * PADDLE_HIT_SPEED_BOOST;
@@ -51,6 +61,7 @@ function adjustBallAfterPaddleCollision(paddle, direction) {
 
   ball.velocityX = direction * baseSpeed * speedMultiplier;
   ball.velocityY = normalized * baseSpeed * speedMultiplier * edgeDamping;
+  clampBallSpeed();
 }
 
 const ball = {
@@ -74,6 +85,7 @@ function resetBall(direction = 1) {
   const speedY = BALL_INITIAL_SPEED_Y + Math.random() * BALL_INITIAL_SPEED_VARIATION;
   ball.velocityX = direction * speedX;
   ball.velocityY = (Math.random() > 0.5 ? 1 : -1) * speedY;
+  clampBallSpeed();
 }
 
 function resetGame() {
@@ -139,6 +151,7 @@ function moveBall(delta) {
 
   if (ball.y - ball.size < 0 || ball.y + ball.size > canvas.height) {
     ball.velocityY *= -1;
+    clampBallSpeed();
   }
 
   const collidedWithPlayer =

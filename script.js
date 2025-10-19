@@ -34,10 +34,11 @@ const BALL_INITIAL_SPEED_X = 3;
 const BALL_INITIAL_SPEED_VARIATION = 1.5;
 const BALL_INITIAL_SPEED_Y = 2;
 const PADDLE_SPEED_INCREASE = 1.05;
+const PADDLE_HIT_SPEED_BOOST = 1.08;
 const PADDLE_EDGE_DAMPING = 0.65;
 
 function adjustBallAfterPaddleCollision(paddle, direction) {
-  const baseSpeed = Math.abs(ball.velocityX);
+  const baseSpeed = Math.abs(ball.velocityX) * PADDLE_HIT_SPEED_BOOST;
   const collidePoint = ball.y - (paddle.y + paddle.height / 2);
   const normalized = Math.max(
     -1,

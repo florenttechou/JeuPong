@@ -93,8 +93,23 @@ function resetGame() {
   computerScore = 0;
   updateScores();
   resetBall();
-  player.y = canvas.height / 2 - player.height / 2;
-  computer.y = canvas.height / 2 - computer.height / 2;
+  resetPaddlesPosition();
+}
+
+function resetPaddlesPosition() {
+  const baseY = canvas.height / 2 - player.height / 2;
+  player.y = baseY;
+  computer.y = baseY;
+}
+
+function resetPaddlesIfMatchPoint() {
+  if (
+    playerScore < MAX_SCORE &&
+    computerScore < MAX_SCORE &&
+    (playerScore === MAX_SCORE - 1 || computerScore === MAX_SCORE - 1)
+  ) {
+    resetPaddlesPosition();
+  }
 }
 
 function updateScores() {
@@ -175,13 +190,19 @@ function moveBall(delta) {
   if (ball.x - ball.size < 0) {
     computerScore += 1;
     updateScores();
-    checkWinner();
-    resetBall(-1);
+    const hasWinner = checkWinner();
+    if (!hasWinner) {
+      resetPaddlesIfMatchPoint();
+      resetBall(-1);
+    }
   } else if (ball.x + ball.size > canvas.width) {
     playerScore += 1;
     updateScores();
-    checkWinner();
-    resetBall(1);
+    const hasWinner = checkWinner();
+    if (!hasWinner) {
+      resetPaddlesIfMatchPoint();
+      resetBall(1);
+    }
   }
 }
 
@@ -190,7 +211,9 @@ function checkWinner() {
     stopGame();
     const winner = playerScore > computerScore ? "Joueur" : "Ordinateur";
     alert(`${winner} gagne !`);
+    return true;
   }
+  return false;
 }
 
 function update(timestamp) {

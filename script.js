@@ -37,6 +37,7 @@ const PADDLE_SPEED_INCREASE = 1.05;
 const PADDLE_HIT_SPEED_BOOST = 1.08;
 const PADDLE_EDGE_DAMPING = 0.65;
 const MAX_BALL_SPEED = 9;
+const BALL_RESPAWN_DELAY = 350;
 
 function clampBallSpeed() {
   const speed = Math.hypot(ball.velocityX, ball.velocityY);
@@ -70,6 +71,7 @@ const ball = {
   size: 10,
   velocityX: BALL_INITIAL_SPEED_X,
   velocityY: BALL_INITIAL_SPEED_Y,
+  visible: true,
 };
 
 let isRunning = false;
@@ -77,6 +79,111 @@ let animationFrameId = null;
 let lastTime = 0;
 let playerScore = 0;
 let computerScore = 0;
+let particles = [];
+let isBallRespawning = false;
+let respawnTimeoutId = null;
+let audioContext = null;
+
+function initializeAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return null;
+  }
+  if (!audioContext) {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+  return audioContext;
+}
+
+function playRetroExplosion() {
+  const context = audioContext;
+  if (!context) {
+    return;
+  }
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gainNode = context.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.setValueAtTime(600, now);
+  oscillator.frequency.exponentialRampToValueAtTime(120, now + 0.25);
+
+  gainNode.gain.setValueAtTime(0.4, now);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(context.destination);
+
+  oscillator.start(now);
+  oscillator.stop(now + 0.32);
+}
+
+function spawnDisintegrationParticles(x, y) {
+  const particleCount = 20;
+  for (let i = 0; i < particleCount; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 2.5;
+    particles.push({
+      x,
+      y,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: Math.sin(angle) * speed,
+      life: 1,
+      size: 2 + Math.random() * 2,
+    });
+  }
+}
+
+function updateParticles(delta) {
+  const damping = Math.pow(0.92, delta);
+  particles = particles
+    .map((particle) => {
+      const updated = { ...particle };
+      updated.x += updated.velocityX * delta;
+      updated.y += updated.velocityY * delta;
+      updated.velocityX *= damping;
+      updated.velocityY *= damping;
+      updated.life -= delta * 0.05;
+      return updated;
+    })
+    .filter((particle) => particle.life > 0);
+}
+
+function drawParticles() {
+  particles.forEach((particle) => {
+    ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, Math.min(1, particle.life))})`;
+    ctx.fillRect(
+      particle.x - particle.size / 2,
+      particle.y - particle.size / 2,
+      particle.size,
+      particle.size
+    );
+  });
+}
+
+function triggerBallDisintegration(direction) {
+  initializeAudioContext();
+  spawnDisintegrationParticles(ball.x, ball.y);
+  playRetroExplosion();
+  ball.visible = false;
+  isBallRespawning = true;
+  if (respawnTimeoutId) {
+    clearTimeout(respawnTimeoutId);
+  }
+  respawnTimeoutId = setTimeout(() => {
+    const hasWinner = checkWinner();
+    if (!hasWinner) {
+      resetPaddlesIfMatchPoint();
+      resetBall(direction);
+      ball.visible = true;
+    }
+    isBallRespawning = false;
+    respawnTimeoutId = null;
+  }, BALL_RESPAWN_DELAY);
+}
 
 function resetBall(direction = 1) {
   ball.x = canvas.width / 2;
@@ -86,14 +193,22 @@ function resetBall(direction = 1) {
   ball.velocityX = direction * speedX;
   ball.velocityY = (Math.random() > 0.5 ? 1 : -1) * speedY;
   clampBallSpeed();
+  ball.visible = true;
 }
 
 function resetGame() {
+  if (respawnTimeoutId) {
+    clearTimeout(respawnTimeoutId);
+    respawnTimeoutId = null;
+  }
   playerScore = 0;
   computerScore = 0;
   updateScores();
   resetBall();
   resetPaddlesPosition();
+  particles = [];
+  isBallRespawning = false;
+  ball.visible = true;
 }
 
 function resetPaddlesPosition() {
@@ -134,6 +249,9 @@ function drawPaddle({ x, y, width, height }) {
 }
 
 function drawBall() {
+  if (!ball.visible) {
+    return;
+  }
   ctx.fillStyle = BALL_COLOR;
   ctx.fillRect(ball.x - ball.size, ball.y - ball.size, ball.size * 2, ball.size * 2);
 }
@@ -161,6 +279,9 @@ function moveComputer(delta) {
 }
 
 function moveBall(delta) {
+  if (isBallRespawning) {
+    return;
+  }
   ball.x += ball.velocityX * delta;
   ball.y += ball.velocityY * delta;
 
@@ -190,19 +311,13 @@ function moveBall(delta) {
   if (ball.x - ball.size < 0) {
     computerScore += 1;
     updateScores();
-    const hasWinner = checkWinner();
-    if (!hasWinner) {
-      resetPaddlesIfMatchPoint();
-      resetBall(-1);
-    }
+    triggerBallDisintegration(-1);
+    return;
   } else if (ball.x + ball.size > canvas.width) {
     playerScore += 1;
     updateScores();
-    const hasWinner = checkWinner();
-    if (!hasWinner) {
-      resetPaddlesIfMatchPoint();
-      resetBall(1);
-    }
+    triggerBallDisintegration(1);
+    return;
   }
 }
 
@@ -226,10 +341,12 @@ function update(timestamp) {
   movePlayer(delta);
   moveComputer(delta);
   moveBall(delta);
+  updateParticles(delta);
 
   drawPaddle(player);
   drawPaddle(computer);
   drawBall();
+  drawParticles();
 
   animationFrameId = requestAnimationFrame(update);
 }
@@ -250,11 +367,13 @@ function stopGame() {
 }
 
 startButton.addEventListener("click", () => {
+  initializeAudioContext();
   resetGame();
   startGame();
 });
 
 pauseButton.addEventListener("click", () => {
+  initializeAudioContext();
   if (!isRunning) {
     startGame();
     pauseButton.textContent = "Pause";
@@ -265,6 +384,7 @@ pauseButton.addEventListener("click", () => {
 });
 
 window.addEventListener("keydown", (event) => {
+  initializeAudioContext();
   if (event.key === "ArrowUp") {
     player.dy = -player.speed;
   } else if (event.key === "ArrowDown") {
@@ -279,6 +399,7 @@ window.addEventListener("keyup", (event) => {
 });
 
 canvas.addEventListener("mousemove", (event) => {
+  initializeAudioContext();
   const rect = canvas.getBoundingClientRect();
   const scaleY = canvas.height / rect.height;
   const y = (event.clientY - rect.top) * scaleY;

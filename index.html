@@ -4,13 +4,56 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pong Classique</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <body class="menu-open">
+    <div
+      class="retro-menu"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="menu-title"
+      aria-describedby="menu-subtitle"
+    >
+      <div class="retro-menu__panel">
+        <p class="retro-menu__eyebrow">Pong édition néon</p>
+        <h1 class="retro-menu__title" id="menu-title">Arène rétro</h1>
+        <p class="retro-menu__subtitle" id="menu-subtitle">
+          Choisis une option pour commencer.
+        </p>
+        <div class="retro-menu__buttons">
+          <button type="button" class="retro-menu__button" id="menu-play">
+            Jouer
+          </button>
+          <button type="button" class="retro-menu__button" id="menu-save">
+            Sauvegarder
+          </button>
+          <button type="button" class="retro-menu__button" id="menu-load">
+            Charger
+          </button>
+          <button type="button" class="retro-menu__button" id="menu-quit">
+            Quitter
+          </button>
+        </div>
+        <p class="retro-menu__hint">
+          Appuie sur <span>Échap</span> pour revenir au menu.
+        </p>
+      </div>
+    </div>
     <main class="layout">
       <section class="game-panel">
-        <h1>Jeu Pong</h1>
-        <canvas id="pong" width="800" height="500" aria-label="Table de jeu Pong"></canvas>
+        <h2 class="panel-title">Jeu Pong</h2>
+        <canvas
+          id="pong"
+          width="800"
+          height="500"
+          aria-label="Table de jeu Pong"
+        ></canvas>
         <div class="scoreboard" role="status" aria-live="polite">
           <span>Joueur: <strong id="player-score">0</strong></span>
           <span>Ordinateur: <strong id="computer-score">0</strong></span>
@@ -27,9 +70,12 @@
         </div>
       </section>
       <aside class="instructions">
-        <h2>Comment jouer</h2>
+        <h3>Comment jouer</h3>
         <ul>
-          <li>Déplacez la raquette de gauche avec la souris ou les flèches haut/bas.</li>
+          <li>
+            Déplacez la raquette de gauche avec la souris ou les flèches
+            haut/bas.
+          </li>
           <li>Marquez des points en renvoyant la balle derrière la raquette adverse.</li>
           <li>
             La manche se joue en 5 points avec deux points d'écart requis pour

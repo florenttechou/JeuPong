@@ -5,12 +5,19 @@ const pauseButton = document.getElementById("pause");
 const playerScoreElement = document.getElementById("player-score");
 const computerScoreElement = document.getElementById("computer-score");
 const winnerBanner = document.getElementById("winner-banner");
+const retroMenu = document.querySelector(".retro-menu");
+const menuSubtitle = document.getElementById("menu-subtitle");
+const menuPlayButton = document.getElementById("menu-play");
+const menuSaveButton = document.getElementById("menu-save");
+const menuLoadButton = document.getElementById("menu-load");
+const menuQuitButton = document.getElementById("menu-quit");
 
 const TABLE_COLOR = "rgba(0, 0, 0, 0.6)";
 const NET_COLOR = "rgba(255, 255, 255, 0.4)";
 const PADDLE_COLOR = "#ffffff";
 const BALL_COLOR = "#ffffff";
 
+const MENU_STORAGE_KEY = "pong-retro-save";
 const WINNING_SCORE = 5;
 const WINNING_LEAD = 2;
 const FRAME_TIME = 1000 / 60;
@@ -88,6 +95,7 @@ let respawnTimeoutId = null;
 let audioContext = null;
 let countdownValue = null;
 let countdownIntervalId = null;
+let resumeAfterMenu = false;
 
 function initializeAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -101,6 +109,114 @@ function initializeAudioContext() {
     audioContext.resume();
   }
   return audioContext;
+}
+
+function setMenuSubtitle(message) {
+  if (menuSubtitle && typeof message === "string") {
+    menuSubtitle.textContent = message;
+  }
+}
+
+function flashMenuButton(button) {
+  if (!button) {
+    return;
+  }
+  button.classList.remove("is-pulsing");
+  void button.offsetWidth;
+  button.classList.add("is-pulsing");
+}
+
+function showMenu(message) {
+  if (typeof message === "string" && message.trim()) {
+    setMenuSubtitle(message);
+  }
+  document.body.classList.add("menu-open");
+  if (retroMenu) {
+    retroMenu.setAttribute("aria-hidden", "false");
+  }
+  if (menuPlayButton) {
+    setTimeout(() => {
+      menuPlayButton.focus();
+    }, 0);
+  }
+}
+
+function hideMenu() {
+  document.body.classList.remove("menu-open");
+  if (retroMenu) {
+    retroMenu.setAttribute("aria-hidden", "true");
+  }
+}
+
+function saveGameState() {
+  if (typeof Storage === "undefined") {
+    return false;
+  }
+
+  const state = {
+    playerScore,
+    computerScore,
+    playerY: player.y,
+    computerY: computer.y,
+    playerDy: player.dy,
+    ball: {
+      x: ball.x,
+      y: ball.y,
+      velocityX: ball.velocityX,
+      velocityY: ball.velocityY,
+      visible: ball.visible,
+    },
+    isBallRespawning,
+    countdownValue,
+  };
+
+  try {
+    localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function loadGameState() {
+  if (typeof Storage === "undefined") {
+    return false;
+  }
+
+  const rawState = localStorage.getItem(MENU_STORAGE_KEY);
+  if (!rawState) {
+    return false;
+  }
+
+  try {
+    stopGame();
+    const state = JSON.parse(rawState);
+    playerScore = state.playerScore ?? playerScore;
+    computerScore = state.computerScore ?? computerScore;
+    player.y = state.playerY ?? player.y;
+    computer.y = state.computerY ?? computer.y;
+    player.dy = state.playerDy ?? 0;
+
+    if (state.ball) {
+      ball.x = state.ball.x ?? ball.x;
+      ball.y = state.ball.y ?? ball.y;
+      ball.velocityX = state.ball.velocityX ?? ball.velocityX;
+      ball.velocityY = state.ball.velocityY ?? ball.velocityY;
+      ball.visible = state.ball.visible ?? true;
+    }
+
+    updateScores();
+    clampBallSpeed();
+    isBallRespawning = false;
+    particles = [];
+    clearCountdownTimers();
+    countdownValue = null;
+    hideWinnerBanner();
+    renderStaticFrame();
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function playRetroExplosion() {
@@ -210,6 +326,15 @@ function drawCountdown() {
   ctx.textBaseline = "middle";
   ctx.fillText(countdownValue, canvas.width / 2, canvas.height / 2);
   ctx.restore();
+}
+
+function renderStaticFrame() {
+  drawTable();
+  drawPaddle(player);
+  drawPaddle(computer);
+  drawBall();
+  drawParticles();
+  drawCountdown();
 }
 
 function clearCountdownTimers() {
@@ -418,6 +543,10 @@ function checkWinner() {
     stopGame();
     const winner = playerScore > computerScore ? "Joueur" : "Ordinateur";
     showWinnerBanner(winner);
+    pauseButton.textContent = "Reprendre";
+    resumeAfterMenu = false;
+    showMenu(`${winner} remporte la partie !`);
+    flashMenuButton(menuPlayButton);
     return true;
   }
   return false;
@@ -461,6 +590,8 @@ function stopGame() {
 
 startButton.addEventListener("click", () => {
   initializeAudioContext();
+  resumeAfterMenu = false;
+  hideMenu();
   resetGame();
   startGame();
   pauseButton.textContent = "Pause";
@@ -477,8 +608,95 @@ pauseButton.addEventListener("click", () => {
   }
 });
 
+if (menuPlayButton) {
+  menuPlayButton.addEventListener("click", () => {
+    initializeAudioContext();
+    resumeAfterMenu = false;
+    hideMenu();
+    resetGame();
+    startGame();
+    pauseButton.textContent = "Pause";
+  });
+}
+
+if (menuSaveButton) {
+  menuSaveButton.addEventListener("click", () => {
+    initializeAudioContext();
+    const saved = saveGameState();
+    setMenuSubtitle(
+      saved
+        ? "Sauvegarde effectuée !"
+        : "Impossible d'enregistrer la sauvegarde."
+    );
+    flashMenuButton(menuSaveButton);
+  });
+}
+
+if (menuLoadButton) {
+  menuLoadButton.addEventListener("click", () => {
+    initializeAudioContext();
+    const loaded = loadGameState();
+    flashMenuButton(menuLoadButton);
+    if (loaded) {
+      setMenuSubtitle("Partie chargée !");
+      resumeAfterMenu = false;
+      hideMenu();
+      startGame();
+      pauseButton.textContent = "Pause";
+    } else {
+      setMenuSubtitle("Aucune sauvegarde trouvée.");
+    }
+  });
+}
+
+if (menuQuitButton) {
+  menuQuitButton.addEventListener("click", () => {
+    stopGame();
+    resetGame();
+    renderStaticFrame();
+    resumeAfterMenu = false;
+    setMenuSubtitle("À bientôt dans l'arène rétro !");
+    flashMenuButton(menuQuitButton);
+  });
+}
+
 window.addEventListener("keydown", (event) => {
   initializeAudioContext();
+
+  if (event.key === "Escape") {
+    if (document.body.classList.contains("menu-open")) {
+      if (!resumeAfterMenu) {
+        event.preventDefault();
+        return;
+      }
+      hideMenu();
+      if (!isRunning) {
+        startGame();
+        pauseButton.textContent = "Pause";
+      }
+      resumeAfterMenu = false;
+      event.preventDefault();
+      return;
+    }
+
+    const wasRunning = isRunning;
+    if (wasRunning) {
+      stopGame();
+      pauseButton.textContent = "Reprendre";
+    }
+    resumeAfterMenu = wasRunning;
+    const message = wasRunning
+      ? "Jeu en pause"
+      : "Menu principal";
+    showMenu(message);
+    event.preventDefault();
+    return;
+  }
+
+  if (document.body.classList.contains("menu-open")) {
+    return;
+  }
+
   if (event.key === "ArrowUp") {
     player.dy = -player.speed;
   } else if (event.key === "ArrowDown") {
@@ -487,6 +705,9 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("keyup", (event) => {
+  if (document.body.classList.contains("menu-open")) {
+    return;
+  }
   if (event.key === "ArrowUp" || event.key === "ArrowDown") {
     player.dy = 0;
   }
@@ -494,6 +715,9 @@ window.addEventListener("keyup", (event) => {
 
 canvas.addEventListener("mousemove", (event) => {
   initializeAudioContext();
+  if (document.body.classList.contains("menu-open")) {
+    return;
+  }
   const rect = canvas.getBoundingClientRect();
   const scaleY = canvas.height / rect.height;
   const y = (event.clientY - rect.top) * scaleY;
@@ -505,7 +729,5 @@ canvas.addEventListener("mousemove", (event) => {
 });
 
 resetGame();
-drawTable();
-drawPaddle(player);
-drawPaddle(computer);
-drawBall();
+renderStaticFrame();
+showMenu();

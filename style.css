@@ -179,7 +179,7 @@ button,
   text-transform: uppercase;
   font-size: clamp(0.65rem, 1.4vw, 0.85rem);
   letter-spacing: 0.18em;
-  background: linear-gradient(180deg, #ffffff 0%, #dcdcdc 100%);
+  background: #ffffff;
   color: var(--ink);
   border: 0;
   border-radius: 16px;
@@ -207,14 +207,7 @@ button::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.08) 0,
-    rgba(0, 0, 0, 0.08) 4px,
-    transparent 4px,
-    transparent 16px
-  );
-  opacity: 0.35;
+  background: #ffffff;
   pointer-events: none;
 }
 

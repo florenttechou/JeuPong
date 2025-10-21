@@ -180,7 +180,7 @@ button,
   font-size: clamp(0.65rem, 1.4vw, 0.85rem);
   letter-spacing: 0.18em;
   background: #ffffff;
-  color: var(--ink);
+  color: #000;
   border: 0;
   border-radius: 16px;
   padding: clamp(0.6rem, 1.6vw, 1rem) clamp(1.4rem, 2.6vw, 2.1rem);
@@ -321,7 +321,7 @@ body.menu-open .retro-menu {
   position: relative;
   padding: 0.9rem 1.4rem;
   background: linear-gradient(180deg, #ffffff 0%, #dcdcdc 100%);
-  color: var(--ink);
+  color: #000;
   font-size: clamp(0.7rem, 1.8vw, 0.95rem);
   letter-spacing: 0.2em;
   border-radius: 18px;
